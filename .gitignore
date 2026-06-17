@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────
+# FinanceTrackerAPI — .gitignore
+# ─────────────────────────────────────────
+
+# Environment variables — never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Django
+*.log
+db.sqlite3
+staticfiles/
+media/
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Migrations — keep these, they are part of your project
+# (do NOT add tracker/migrations/ here)
