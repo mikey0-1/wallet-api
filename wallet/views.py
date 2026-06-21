@@ -58,11 +58,11 @@ class TransferView(APIView):
 
         recipient = serializer.validated_data['recipient']
         amount = serializer.validated_data['amount']
-        description = serializer.validated_data('description', '')
+        description = serializer.validated_data.get('description', '')
 
         # 4 - run transfer inside atomic block
         with transaction.atomic():
-            wallets = Wallet.objects.select_for_update().filter(user__in=[recipient.user, recipient]).order_by('id')
+            wallets = Wallet.objects.select_for_update().filter(user__in=[request.user, recipient]).order_by('id')
 
             sender_wallet = wallets.get(user=request.user)
             recipient_wallet = wallets.get(user=recipient)
@@ -80,10 +80,10 @@ class TransferView(APIView):
                 return Response({'error': 'transfer failed'}, status=status.HTTP_400_BAD_REQUEST)
 
             # transfer the money
-            sender_wallet -= amount
-            recipient_wallet += amount
-            sender_wallet.save(_from_transfer=True)
-            recipient_wallet.save(_from_transfer=True)
+            sender_wallet.balance -= amount
+            recipient_wallet.balance += amount
+            sender_wallet.save()
+            recipient_wallet.save()
 
             # record the transfer
             transfer = Transfer.objects.create(
