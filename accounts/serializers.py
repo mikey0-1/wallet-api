@@ -21,7 +21,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields =('id', 'email', 'first_name', 'last_name', 'password', 'confirm_password')
 
     def validate_email(self, email):
-        if CustomUser.objects.get(email=email).exists():
+        if CustomUser.objects.filter(email=email).exists():
             raise serializers.ValidationError('Email already registered')
         return email
 
@@ -38,5 +38,5 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('password', None)
+        validated_data.pop('confirm_password')
         return CustomUser.objects.create_user(**validated_data)
