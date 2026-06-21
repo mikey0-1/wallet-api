@@ -13,7 +13,7 @@ class TransferFilter(django_filters.FilterSet):
 class LedgerEntryFilter(django_filters.FilterSet):
     created_at_after = django_filters.DateTimeFilter(field_name='create_at', lookup_expr='gte')
     created_at_before = django_filters.DateTimeFilter(field_name='create_at', lookup_expr='lte')
-    entry_type = django_filters.ModelChoiceFilter(choices=LedgerEntry.LedgerEntryChoices.choices)
+    entry_type = django_filters.ChoiceFilter(choices=LedgerEntry.LedgerEntryChoices.choices)
 
     class Meta:
         model = LedgerEntry
