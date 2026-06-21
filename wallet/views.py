@@ -1,8 +1,11 @@
+from django.db import transaction
 from django.shortcuts import render
-from rest_framework import generics, permissions
-
-from wallet.models import Wallet
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from wallet.models import Wallet, Transfer, LedgerEntry
 from wallet.serializers import WalletSerializer
+from .serializers import TransferSerializer
 
 class WalletView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -10,3 +13,79 @@ class WalletView(generics.RetrieveAPIView):
 
     def get_object(self):
         return Wallet.objects.get(user=self.request.user)
+
+class TransferView(APIView):
+    def post(self, request):
+
+        # 1 - check if idempotency key from header
+        idempotency_key = request.data.get('idempotency_key')
+        if not idempotency_key:
+            return Response({'error': 'idempotency_key is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2 - check if idempotency key is already used
+        existing_transfer = Transfer.objects.filter(idempotency_key=idempotency_key).first()
+        if existing_transfer:
+            return Response(TransferSerializer(existing_transfer).data, status=status.HTTP_200_OK)
+
+        # 3 - validate request
+        serializer = TransferSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        recipient = serializer.validated_data['recipient']
+        amount = serializer.validated_data['amount']
+        description = serializer.validated_data('description', '')
+
+        # 4 - run transfer inside atomic block
+        with transaction.atomic():
+            wallets = Wallet.objects.select_for_update().filter(user__in=[recipient.user, recipient]).order_by('id')
+
+            sender_wallet = wallets.get(user=request.user)
+            recipient_wallet = wallets.get(user=recipient)
+
+            # record failed attempt
+            if sender_wallet.balance < amount:
+                Transfer.objects.create(
+                    sender=request.user,
+                    recipient=recipient,
+                    amount=amount,
+                    status=Transfer.TransferStatus.FAILED,
+                    idempotency_key=idempotency_key,
+                    description=description,
+                )
+                return Response({'error': 'transfer failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # transfer the money
+            sender_wallet -= amount
+            recipient_wallet += amount
+            sender_wallet.save(_from_transfer=True)
+            recipient_wallet.save(_from_transfer=True)
+
+            # record the transfer
+            transfer = Transfer.objects.create(
+                sender=request.user,
+                recipient=recipient,
+                amount=amount,
+                status=Transfer.TransferStatus.COMPLETED,
+                idempotency_key=idempotency_key,
+                description=description,
+            )
+
+            # create ledger entries
+            LedgerEntry.objects.create(
+                wallet = sender_wallet,
+                transfer = transfer,
+                entry_type=LedgerEntry.LedgerEntryChoices.DEBIT,
+                amount=amount,
+                balance_after=sender_wallet.balance,
+            )
+
+            LedgerEntry.objects.create(
+                wallet = recipient_wallet,
+                transfer = transfer,
+                entry_type=LedgerEntry.LedgerEntryChoices.CREDIT,
+                amount=amount,
+                balance_after=recipient_wallet.balance,
+            )
+
+        return Response(TransferSerializer(transfer).data, status=status.HTTP_200_OK)
