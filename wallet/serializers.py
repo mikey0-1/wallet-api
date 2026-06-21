@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from wallet.models import Wallet, Transfer
+from wallet.models import Wallet, Transfer, LedgerEntry
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -30,3 +30,16 @@ class TransferSerializer(serializers.ModelSerializer):
         if request and data.get('recipient') == request.user:
             raise serializers.ValidationError('You cannot transfer money to your own wallet')
         return data
+
+class LedgerEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LedgerEntry
+        fields = [
+            'id',
+            'wallet',
+            'entry_type',
+            'amount',
+            'balance_after',
+            'created_at',
+        ]
+        read_only_fields = [fields]

@@ -1,10 +1,15 @@
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import render
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from filters.filters import TransferFilter
 from wallet.models import Wallet, Transfer, LedgerEntry
-from wallet.serializers import WalletSerializer
+from wallet.serializers import WalletSerializer, LedgerEntrySerializer
 from .serializers import TransferSerializer
 
 class WalletView(generics.RetrieveAPIView):
@@ -89,3 +94,29 @@ class TransferView(APIView):
             )
 
         return Response(TransferSerializer(transfer).data, status=status.HTTP_200_OK)
+
+class TransferListView(generics.ListAPIView):
+    serializer_class = TransferSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TransferFilter
+
+    def get_queryset(self):
+        return Transfer.objects.filter (Q(user=self.request.user) | Q(recipient=self.request.user)).order_by('-created_at')
+
+class TransferDetailView(generics.RetrieveAPIView):
+    serializer_class = TransferSerializer
+
+    def get_object(self):
+        transfer = Transfer.objects.filter (Q(user=self.request.user) | Q(recipient=self.request.user),
+                                            pk=self.kwargs['pk']).first()
+        if not transfer:
+            raise NotFound()
+        return transfer
+
+class LedgerEntryListView(generics.ListAPIView):
+    serializer_class = LedgerEntrySerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TransferFilter
+
+    def get_queryset(self):
+        return LedgerEntry.objects.filter(wallet__user=self.request.user).order_by('-created_at')
