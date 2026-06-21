@@ -6,11 +6,12 @@ from rest_framework import generics, permissions, status
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from filters.filters import TransferFilter
 from wallet.models import Wallet, Transfer, LedgerEntry
 from wallet.serializers import WalletSerializer, LedgerEntrySerializer
 from .serializers import TransferSerializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 class WalletView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -20,6 +21,24 @@ class WalletView(generics.RetrieveAPIView):
         return Wallet.objects.get(user=self.request.user)
 
 class TransferView(APIView):
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+            name="idempotency_key",
+            type=OpenApiTypes.STR,
+            location='header',
+            required=True,
+            description='Unique key to safely retry transfers without double-processing. '
+                        'Use a UUID. If a transfer with this key already exists, the original result is returned instead of creating a new transfer.'
+        )],
+        request=TransferSerializer,
+        responses={
+            201: TransferSerializer,
+            400: OpenApiTypes.OBJECT
+        }
+    )
+
     def post(self, request):
 
         # 1 - check if idempotency key from header

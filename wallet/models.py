@@ -18,7 +18,7 @@ class Transfer(models.Model):
 
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_transfers')
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_transfers')
-    amount = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
     status = models.CharField(max_length=1, choices=TransferStatus.choices)
     idempotency_key = models.CharField(max_length=255, unique=True, db_index=True)
     description = models.CharField(max_length=255, null=True, blank=True)

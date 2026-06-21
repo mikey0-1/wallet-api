@@ -37,9 +37,18 @@ class LedgerEntrySerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'wallet',
+            'transfer',
             'entry_type',
             'amount',
             'balance_after',
             'created_at',
         ]
-        read_only_fields = [fields]
+        read_only_fields = [
+            'id',
+            'wallet',
+            'transfer',
+            'entry_type',
+            'amount',
+            'balance_after',
+            'created_at',
+        ]
