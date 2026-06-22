@@ -86,10 +86,10 @@ If anything fails mid-way, the entire transaction rolls back. The wallet balance
 | POST | `/api/refresh/` | Refresh access token |
 | GET/PATCH | `/api/profile/` | View or update your profile |
 | GET | `/api/wallet/` | View your wallet balance |
-| POST | `/api/wallet/transfers/create/` | Send money to another user |
-| GET | `/api/wallet/transfers/` | List your transfers |
-| GET | `/api/wallet/transfers/{id}/` | Retrieve one transfer |
-| GET | `/api/wallet/ledger/` | View your ledger (transaction statement) |
+| POST | `/api/transfers/create/` | Send money to another user |
+| GET | `/api/transfers/` | List your transfers |
+| GET | `/api/transfers/{id}/` | Retrieve one transfer |
+| GET | `/api/ledger/` | View your ledger (transaction statement) |
 
 ---
 
