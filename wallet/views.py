@@ -38,13 +38,16 @@ class TransferView(APIView):
             400: OpenApiTypes.OBJECT
         }
     )
-
     def post(self, request):
 
         # 1 - check if idempotency key from header
-        idempotency_key = request.data.get('idempotency_key')
+        idempotency_key = request.headers.get('Idempotency-Key')
+
         if not idempotency_key:
-            return Response({'error': 'idempotency_key is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Idempotency-Key header is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # 2 - check if idempotency key is already used
         existing_transfer = Transfer.objects.filter(idempotency_key=idempotency_key).first()
